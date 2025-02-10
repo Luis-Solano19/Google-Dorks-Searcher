@@ -3,7 +3,7 @@ import os
 from googlesearch import GoogleSearch
 import argparse
 import sys
-
+from results_parser import ResultsParser
 
 def env_config():
     """
@@ -17,14 +17,14 @@ def env_config():
     set_key(".env", "SEARCH_ENGINE_ID", engine_id)
 
 
-def main(query, configure_env, start_page, pages, lang):
+def main(query, configure_env, start_page, pages, lang, output_json, output_html):
     # Comprobar si existe el fichero/archivo de configuracion
     env_exists = os.path.exists(".env")
 
     if not env_exists or configure_env:
         env_config()
         print("Arhivo .env configurado satisfactoriamente.")
-
+ 
         # Parar la ejecucion luego de configurar el archivo.
         sys.exit(1)
     
@@ -46,7 +46,15 @@ def main(query, configure_env, start_page, pages, lang):
 
     results = gsearch.search(query=query, start_page=start_page, pages=pages, lang=lang)
 
-    print(results)
+    rparser = ResultsParser(resultados=results)
+    # Mostar resultados en consola
+    rparser.mostrar_consola()
+
+    if output_html:
+        rparser.export_html(output_html)
+    
+    if output_json:
+        rparser.export_json(output_json)
 
 
 if __name__ == "__main__":
@@ -54,7 +62,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Esta herramienta permite realizar hacking con buscadores de forma automatica")
 
     parser.add_argument("-q", "--query", type=str, 
-        help="Especifica el dork/consulta a buscar. \nEjemplos: -q 'League of legends' o --query  'filetype:sql \"MySQL dump\" (pass|password|passwd|pwd)' ")
+        help="Especifica el dork/consulta a buscar. \nEjemplos: -q \"League of legends\" o --query  'filetype:sql \"MySQL dump\" (pass|password|passwd|pwd)' ")
     
     parser.add_argument("-c", "--config", action="store_true", 
         help="Inicia el proceso de config del archivo .env \nUtiliza esta opcion sin otros argumentos para configurar las claves.")
@@ -67,9 +75,17 @@ if __name__ == "__main__":
 
     parser.add_argument("--lang", type=str, default="lang_es", 
         help="Codigo de idioma para los resultados de busqueda. 'lang_es' por defecto. ")
+
+    parser.add_argument("--json", type=str, help="Exporta los resultados a JSON al fichero especificado\n Ejemplo: python ninjadorks.py -q 'filetype:sql \"MySQL dump\" (pass|password|passwd|pwd)' --json \"sql_passw.json\"")
+
+    parser.add_argument("--html", type=str, help="Exporta los resultados a HTML al fichero especificado\n Ejemplo: python ninjadorks.py -q 'filetype:sql \"MySQL dump\" (pass|password|passwd|pwd)' --html \"sql_passw.html\" ")
     
     # Procesar argumentos
     args = parser.parse_args()
 
 
-    main(query=args.query, configure_env=args.config, start_page=args.start_page, pages=args.pages, lang=args.lang)
+    main(query=args.query, configure_env=args.config, 
+        start_page=args.start_page, pages=args.pages, 
+        lang=args.lang, output_html=args.html, 
+        output_json=args.json
+    )
